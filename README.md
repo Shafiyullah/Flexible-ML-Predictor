@@ -49,3 +49,9 @@ Run the main application from your terminal to access the interactive menu:
 ```bash
 python main.py
 ```
+
+---
+
+## License
+
+This project is licensed under the **MIT License**. See the `LICENSE` file for details.
