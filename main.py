@@ -1,4 +1,5 @@
 import sys
+import pandas as pd
 from analyzer.data_analyzer import Data_Analyzer
 
 def main():
@@ -11,14 +12,15 @@ def main():
             print("1. Load, clean, and optimize file (CSV, XLSX, JSON)")
             print("2. View data info")
             print("3. Train a new model (Fast & Robust)")
-            print("4. Save the current model")
-            print("5. Load a saved model")
-            print("6. Predict on new data (file)")
-            print("7. Run Data Query (Pandas)")
-            print("8. Visualize Data (Plotting)")
-            print("9. Exit")
+            print("4. Run Unsupervised Analysis (Clustering/PCA)")
+            print("5. Save the current model")
+            print("6. Load a saved model")
+            print("7. Predict on new data (file)")
+            print("8. Run Data Query (Pandas)")
+            print("9. Visualize Data (Plotting)")
+            print("0. Exit")
             
-            choice = input("Choose option (1-9): ").strip()
+            choice = input("Choose option (0-9): ").strip()
             
             if choice == '1':
                 file_path = input("Enter file path: ").strip()
@@ -50,7 +52,38 @@ def main():
                 print(f"Starting model training for target: {target}...")
                 analyzer.train_model(target)
             
+            # --- Unsupervised Analysis ---
             elif choice == '4':
+                if analyzer.df is None:
+                    print("Load data first (Option 1).")
+                    continue
+                
+                print("\n--- Unsupervised Analysis ---")
+                print("1. Clustering (K-Means)")
+                print("2. Dimensionality Reduction (PCA)")
+                
+                analysis_choice = input("Select analysis type (1 or 2): ").strip()
+                
+                if analysis_choice == '1':
+                    analysis_type = 'clustering'
+                    try:
+                        k = int(input("Enter number of clusters (K): ").strip())
+                        analyzer.run_unsupervised_analysis(analysis_type, k)
+                    except ValueError as e:
+                        print(f"Input Error: {e}")
+                    
+                elif analysis_choice == '2':
+                    analysis_type = 'pca'
+                    try:
+                        n = int(input("Enter number of components (N): ").strip())
+                        analyzer.run_unsupervised_analysis(analysis_type, n)
+                    except ValueError as e:
+                        print(f"Input Error: {e}")
+                
+                else:
+                    print("Invalid analysis choice.")
+            
+            elif choice == '5':
                 if analyzer.model_pipeline is None:
                     print("No model has been trained yet (Option 3).")
                     continue
@@ -59,11 +92,11 @@ def main():
                 analyzer.save_model(file_path)
                 print(f"Model saved to {file_path}")
 
-            elif choice == '5':
+            elif choice == '6':
                 file_path = input("Enter file path to load model from (e.g., my_model.joblib): ").strip()
                 analyzer.load_model(file_path)
 
-            elif choice == '6':
+            elif choice == '7':
                 if analyzer.model_pipeline is None:
                     print("No model is loaded (Option 5) or trained (Option 3).")
                     continue
@@ -86,7 +119,7 @@ def main():
                     results_df.to_csv("predictions.csv", index=False)
                     print("Saved to predictions.csv")
             
-            elif choice == '7':
+            elif choice == '8':
                 if analyzer.df is None:
                     print("Load data first (Option 1).")
                     continue
@@ -103,7 +136,7 @@ def main():
                 else:
                     print("Query returned an empty result set.")
 
-            elif choice == '8':
+            elif choice == '9':
                 if analyzer.df is None:
                     print("Load data first (Option 1).")
                     continue
@@ -124,7 +157,7 @@ def main():
                 else:
                     print("Invalid plot choice.")
                 
-            elif choice == '9':
+            elif choice == '0':
                 print("Exiting application. Goodbye!")
                 sys.exit()
                 
