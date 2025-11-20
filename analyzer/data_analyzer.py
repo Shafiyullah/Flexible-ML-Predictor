@@ -11,13 +11,23 @@ from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import mean_squared_error, r2_score, accuracy_score, classification_report
 from pandas.api.types import is_numeric_dtype, is_datetime64_any_dtype
-from analyzer.preprocessing import create_preprocessor, DatetimeFeatureExtractor
+from analyzer.preprocessing import create_preprocessor
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 
 warnings.filterwarnings('ignore')
+
+# RL Imports
+try:
+    from stable_baselines3 import PPO
+    from stable_baselines3.common.vec_env import DummyVecEnv
+    from analyzer.rl_env import DataFrameEnv
+    RL_AVAILABLE = True
+except ImportError:
+    RL_AVAILABLE = False
+
 
 class Data_Analyzer:
     def __init__(self):
@@ -487,4 +497,80 @@ class Data_Analyzer:
 
         except Exception as e:
             self.logger.error(f"Unsupervised analysis failed: {str(e)}")
+            raise
+
+    def train_rl_agent(self, target_col: str, total_timesteps: int = 10000):
+        """
+        Trains a PPO (Proximal Policy Optimization) Agent to predict trends.
+        """
+        if not RL_AVAILABLE:
+            self.logger.error("RL libraries not installed. Please install 'stable-baselines3' and 'gymnasium'.")
+            print("Error: RL libraries missing. Install stable-baselines3 and gymnasium.")
+            return
+
+        if self.df is None:
+            raise ValueError("Data not loaded.")
+        
+        if target_col not in self.df.columns:
+            raise ValueError(f"Target column '{target_col}' not found.")
+
+        # We need numeric targets for trend prediction
+        if not is_numeric_dtype(self.df[target_col]):
+             raise ValueError("RL Trend Prediction requires a numeric target column.")
+
+        print(f"\n--- Starting RL Training (PPO) ---")
+        print(f"Target: {target_col}")
+        print(f"Timesteps: {total_timesteps}")
+        self.logger.info(f"Initializing RL environment for target: {target_col}")
+
+        try:
+            # 1. Preprocess Data specifically for RL (Need pure numeric matrix)
+            # We reuse the helper to get a clean, numeric-only dataframe for the environment
+            column_types = self.get_column_types()
+            numeric_features = column_types['numeric']
+            
+            # Use ONLY numeric columns for the RL state to keep it simple/stable
+            df_rl = self.df[numeric_features].copy()
+            
+            # Fill any remaining NaNs
+            df_rl = df_rl.fillna(0)
+
+            # 2. Create the Environment
+            # We wrap it in DummyVecEnv as required by Stable Baselines
+            env = DummyVecEnv([lambda: DataFrameEnv(df_rl, target_col)])
+
+            # 3. Initialize the Agent (PPO is robust and general-purpose)
+            model = PPO("MlpPolicy", env, verbose=1, learning_rate=0.0003)
+
+            # 4. Train
+            print("Training in progress... (This may take a moment)")
+            model.learn(total_timesteps=total_timesteps)
+            
+            print("\n--- RL Training Complete ---")
+            
+            # 5. Simple Evaluation Loop
+            obs = env.reset()
+            total_reward = 0
+            action_counts = {0:0, 1:0}
+            
+            # Run one 'episode' (one pass through the data)
+            print("Evaluating Agent on full dataset...")
+            for _ in range(len(df_rl) - 1):
+                action, _states = model.predict(obs)
+                obs, rewards, dones, info = env.step(action)
+                total_reward += rewards[0]
+                action_counts[int(action[0])] += 1
+                if dones[0]:
+                    break
+            
+            print(f"Total Reward Acquired: {total_reward:.2f}")
+            print(f"Actions taken: {action_counts} (0=Decrease/Hold, 1=Increase)")
+            
+            # Save the RL model separately
+            model.save("rl_trend_predictor.zip")
+            print("Agent saved to 'rl_trend_predictor.zip'")
+            self.logger.info("RL Agent trained and saved.")
+
+        except Exception as e:
+            self.logger.error(f"RL Training failed: {e}")
             raise
