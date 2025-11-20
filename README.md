@@ -2,20 +2,28 @@
 
 ## Description
 
-An optimized, end-to-end Auto-ML command-line tool for **Supervised** (Regression/Classification) and **Unsupervised** (Clustering/PCA) analysis of tabular data (CSV, Excel, JSON). It guarantees model integrity by employing scikit-learn Pipelines to prevent data leakage and boosts accuracy through automatic feature engineering (datetime extraction). The system prioritizes speed and efficiency by using Randomized Search for fast model selection and memory-optimized processing for large datasets.
+An optimized, end-to-end **Auto-ML command-line tool** designed for the comprehensive analysis of tabular data (CSV, Excel, JSON). This project bridges the gap between traditional and advanced machine learning by integrating **Supervised Learning** (Regression/Classification), **Unsupervised Learning** (Clustering/PCA), and **Reinforcement Learning** (Trend Prediction) into a single, memory-efficient pipeline.
+
+It guarantees model integrity using **scikit-learn Pipelines** to prevent data leakage, maximizes speed with **RandomizedSearchCV**, and provides deep interpretability through **feature importance** reporting.
 
 ---
 
 ## Key Features
 
-* **Data Leakage Prevention:** Utilizes `ColumnTransformer` to ensure preprocessing steps (scaling, imputation) are learned *only* from the training data.
-* **Performance & Memory Optimized:** Uses **RandomizedSearchCV** for fast tuning and **sparse encoding/downcasting** for memory efficiency on large datasets.
-* **Automatic Feature Engineering:** Automatically detects date columns and extracts predictive features (**month, day, hour**).
-* **Dual ML Tasks:** Supports **Regression** and **Classification** with automatic task detection.
-* **Unsupervised Analysis (NEW):** Provides in-tool options for **Clustering (K-Means)** and **Dimensionality Reduction (PCA)**, adding the resulting analysis columns directly to the DataFrame.
-* **Feature Importance:** Reports the **Top 10 most influential features** after training, boosting interpretability.
-* **Model Persistence:** Save and load the entire trained pipeline (preprocessor + model) using `joblib` for re-use.
-* **Deep Analysis:** Efficient **Pandas-based querying** and data visualization (histograms, scatter plots).
+### Machine Learning Modules
+* **Supervised Learning:** Automatically detects and trains **Regression** (numeric target) or **Classification** (categorical target) models using robust algorithms (Random Forest, Gradient Boosting, Linear/Logistic Regression).
+* **Unsupervised Analysis:** In-tool options for **K-Means Clustering** and **Principal Component Analysis (PCA)** to discover hidden patterns and reduce dimensionality.
+* **Reinforcement Learning (NEW):** Includes a custom **Gymnasium Environment** that treats data as a time-series. Trains a **PPO Agent** (via Stable Baselines3) to predict future trends (Increase/Decrease) based on sequential state features.
+
+### Engineering & Performance
+* **Data Leakage Prevention:** Strictly isolates preprocessing (scaling, imputation) within a `ColumnTransformer` to ensure test data remains unseen during training.
+* **Memory Optimized:** Automates **sparse encoding** for categoricals and **numeric downcasting** to handle large datasets efficiently.
+* **Smart Feature Engineering:** Automatically detects datetime columns and extracts predictive features (**month, day, hour**).
+* **Fast Model Selection:** Uses **RandomizedSearchCV** to efficiently find the best hyperparameters without the computational cost of exhaustive grid searches.
+
+### Utilities
+* **Model Persistence:** Save and load full pipelines (preprocessor + model) using `joblib` and RL agents using `.zip` format.
+* **Deep Analysis:** Efficient **Pandas-based querying** and visualization (histograms, scatter plots).
 
 ---
 
@@ -29,13 +37,12 @@ An optimized, end-to-end Auto-ML command-line tool for **Supervised** (Regressio
 2.  **Create a Virtual Environment (Recommended):**
     ```bash
     python -m venv venv
-    ```
-
-    ```bash
-    source venv/bin/activate
+    source venv/bin/activate  # Windows: venv\Scripts\activate
     ```
 
 3.  **Install Dependencies:**
+    *Includes `stable-baselines3` and `gymnasium` for RL support.*
+    
     ```bash
     pip install -r requirements.txt
     ```
@@ -49,7 +56,6 @@ Run the main application from your terminal to access the interactive menu:
 ```bash
 python main.py
 ```
-
 ---
 
 ## License
