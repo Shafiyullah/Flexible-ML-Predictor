@@ -96,13 +96,16 @@ def main():
                 try:
                     steps = input("Enter training timesteps (default 10000): ").strip()
                     steps = int(steps) if steps else 10000
-                    analyzer.train_rl_agent(target, total_timesteps=steps)
+                    save_path = input("Enter path to save RL agent (default: rl_trend_predictor): ").strip()
+                    if not save_path: save_path = "rl_trend_predictor"
+                    
+                    analyzer.train_rl_agent(target, total_timesteps=steps, save_path=save_path)
                 except Exception as e:
                     print(f"RL Error: {e}")
             
             elif choice == '6':
-                if analyzer.model_pipeline is None:
-                    print("No model has been trained yet (Option 3).")
+                if analyzer.model_pipeline is None and analyzer.unsupervised_model is None:
+                    print("No model has been trained yet (Option 3, 4, or 5).")
                     continue
 
                 file_path = input("Enter file path to save model (e.g., my_model.joblib): ").strip()
