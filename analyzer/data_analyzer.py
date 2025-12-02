@@ -6,6 +6,7 @@ import os
 import warnings
 import re
 import joblib
+import gc
 from pathlib import Path
 from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.pipeline import Pipeline
@@ -36,6 +37,9 @@ class Data_Analyzer:
         self.target_col = None
         self.features_list = None
         self.model_type = None
+        self.unsupervised_model = None
+        self.unsupervised_type = None
+        self.rl_model_path = None
         self.setup_logging()
         
     def setup_logging(self):
@@ -142,6 +146,9 @@ class Data_Analyzer:
             
             self.df = df
             self.logger.info(f"Data loaded and prepared: {len(df)} rows, {len(df.columns)} columns.")
+            
+            # MEMORY: Force garbage collection
+            gc.collect()
             
         except Exception as e:
             self.logger.error(f"Data loading failed: {str(e)}")
@@ -285,6 +292,9 @@ class Data_Analyzer:
         
         # Feature Importance 
         self.show_feature_importance()
+        
+        # MEMORY: Force garbage collection
+        gc.collect()
 
     def show_feature_importance(self):
         """ Extracts and displays feature importance from the trained pipeline. """
@@ -323,16 +333,29 @@ class Data_Analyzer:
             print(f"\nCould not extract feature importance: {e}")
 
     def save_model(self, file_path: str):
-        if self.model_pipeline is None: raise ValueError("No model has been trained.")
+        """
+        Saves the current model (Supervised or Unsupervised).
+        RL models are saved separately during training.
+        """
         try:
             save_object = {
-                'pipeline': self.model_pipeline,
                 'target_col': self.target_col,
                 'features_list': self.features_list,
                 'model_type': self.model_type
             }
+            
+            if self.model_pipeline is not None:
+                save_object['pipeline'] = self.model_pipeline
+                save_object['type'] = 'supervised'
+            elif self.unsupervised_model is not None:
+                save_object['pipeline'] = self.unsupervised_model # Contains preprocessor + model
+                save_object['type'] = 'unsupervised'
+                save_object['unsupervised_type'] = self.unsupervised_type
+            else:
+                raise ValueError("No trained model to save.")
+
             joblib.dump(save_object, file_path)
-            self.logger.info(f"Model pipeline saved to {file_path}")
+            self.logger.info(f"Model saved to {file_path}")
         except Exception as e:
             self.logger.error(f"Failed to save model: {e}")
             raise
@@ -340,13 +363,27 @@ class Data_Analyzer:
     def load_model(self, file_path: str):
         try:
             if not os.path.exists(file_path): raise FileNotFoundError(f"Model file not found: {file_path}")
+            
+            # SECURITY WARNING
+            print("\n[SECURITY WARNING] Loading models with joblib is insecure if the file is untrusted.")
+            print("Only load models you created or trust implicitly.\n")
+            
             loaded_object = joblib.load(file_path)
-            self.model_pipeline = loaded_object['pipeline']
-            self.target_col = loaded_object['target_col']
-            self.features_list = loaded_object['features_list']
-            self.model_type = loaded_object['model_type']
+            
+            if loaded_object.get('type') == 'unsupervised':
+                self.unsupervised_model = loaded_object['pipeline']
+                self.unsupervised_type = loaded_object.get('unsupervised_type')
+                self.model_type = 'unsupervised'
+                print(f"Unsupervised model loaded. Type: {self.unsupervised_type}")
+            else:
+                self.model_pipeline = loaded_object.get('pipeline')
+                self.target_col = loaded_object.get('target_col')
+                self.features_list = loaded_object.get('features_list')
+                self.model_type = loaded_object.get('model_type')
+                print(f"Supervised model loaded. Type: {self.model_type}, Target: {self.target_col}")
+                
             self.logger.info(f"Successfully loaded model from {file_path}")
-            print(f"Model loaded. Type: {self.model_type}, Target: {self.target_col}")
+            
         except Exception as e:
             self.logger.error(f"Failed to load model: {e}")
             raise
@@ -495,11 +532,15 @@ class Data_Analyzer:
             else:
                 raise ValueError(f"Unsupported analysis type: {analysis_type}")
 
+            # Save the unsupervised pipeline (preprocessor + model)
+            self.unsupervised_model = Pipeline(steps=[('preprocessor', preprocessor), ('model', model)])
+            self.unsupervised_type = analysis_type
+
         except Exception as e:
             self.logger.error(f"Unsupervised analysis failed: {str(e)}")
             raise
 
-    def train_rl_agent(self, target_col: str, total_timesteps: int = 10000):
+    def train_rl_agent(self, target_col: str, total_timesteps: int = 10000, save_path: str = "rl_trend_predictor"):
         """
         Trains a PPO (Proximal Policy Optimization) Agent to predict trends.
         """
@@ -567,9 +608,14 @@ class Data_Analyzer:
             print(f"Actions taken: {action_counts} (0=Decrease/Hold, 1=Increase)")
             
             # Save the RL model separately
-            model.save("rl_trend_predictor.zip")
-            print("Agent saved to 'rl_trend_predictor.zip'")
+            model.save(save_path)
+            print(f"Agent saved to '{save_path}.zip'")
             self.logger.info("RL Agent trained and saved.")
+            
+            # MEMORY: Force garbage collection
+            del model
+            del env
+            gc.collect()
 
         except Exception as e:
             self.logger.error(f"RL Training failed: {e}")
