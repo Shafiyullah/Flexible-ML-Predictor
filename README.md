@@ -23,6 +23,7 @@ It guarantees model integrity using **scikit-learn Pipelines** to prevent data l
 
 ### Utilities
 * **Model Persistence:** Save and load full pipelines (preprocessor + model) using `joblib` and RL agents using `.zip` format.
+* **Security:** Includes warnings when loading models to prevent execution of untrusted code.
 * **Deep Analysis:** Efficient **Pandas-based querying** and visualization (histograms, scatter plots).
 
 ---
