@@ -8,3 +8,8 @@ gymnasium
 stable-baselines3
 shimmy
 tabulate
+pyarrow
+xgboost
+prophet
+streamlit
+plotly

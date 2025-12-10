@@ -26,6 +26,7 @@ MANIFEST
 .venv/
 venv/
 env/
+.streamlit/
 
 # Logs and Data
 *.log

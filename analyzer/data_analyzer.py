@@ -29,6 +29,18 @@ try:
 except ImportError:
     RL_AVAILABLE = False
 
+try:
+    from xgboost import XGBRegressor, XGBClassifier
+    XGBOOST_AVAILABLE = True
+except ImportError:
+    XGBOOST_AVAILABLE = False
+
+try:
+    from prophet import Prophet
+    PROPHET_AVAILABLE = True
+except ImportError:
+    PROPHET_AVAILABLE = False
+
 
 class Data_Analyzer:
     def __init__(self):
@@ -76,8 +88,8 @@ class Data_Analyzer:
         file_ext = Path(file_path).suffix.lower()
         
         if file_ext == '.csv':
-            # MEMORY FIX: Added low_memory=True
-            df = pd.read_csv(file_path, on_bad_lines='warn', encoding='utf-8', low_memory=True)
+            # Added low_memory=True, OPTIMIZATION: Use PyArrow engine
+            df = pd.read_csv(file_path, on_bad_lines='warn', encoding='utf-8', low_memory=True, engine='pyarrow')
         elif file_ext in ['.xlsx', '.xls']:
             df = pd.read_excel(file_path, sheet_name=0)
         elif file_ext == '.json':
@@ -219,30 +231,66 @@ class Data_Analyzer:
         
         # 4. Define Models and Hyperparameter Grids 
         if self.model_type == 'regression':
-            models = {
-                'LinearRegression': (LinearRegression(), {}),
-                'RandomForest': (RandomForestRegressor(random_state=42), 
-                                 {'model__n_estimators': [50, 100, 200], 'model__max_depth': [5, 10, 20, None]}),
-                'GradientBoosting': (GradientBoostingRegressor(random_state=42), 
-                                     {'model__n_estimators': [50, 100], 'model__learning_rate': [0.05, 0.1]})
-            }
-            scoring = 'r2'
+            best_pipeline, best_model_name, best_score = self._train_regression(X_train, y_train, X_test, y_test, preprocessor)
         else:
-            models = {
-                'LogisticRegression': (LogisticRegression(random_state=42, max_iter=1000), 
-                                       {'model__C': [0.1, 1.0, 10]}),
-                'RandomForest': (RandomForestClassifier(random_state=42), 
-                                 {'model__n_estimators': [50, 100, 200], 'model__max_depth': [5, 10, 20, None]}),
-                'GradientBoosting': (GradientBoostingClassifier(random_state=42), 
-                                     {'model__n_estimators': [50, 100], 'model__learning_rate': [0.05, 0.1]})
-            }
-            scoring = 'accuracy'
+            best_pipeline, best_model_name, best_score = self._train_classification(X_train, y_train, X_test, y_test, preprocessor)
             
+        self.model_pipeline = best_pipeline
+        self.logger.info(f"Selected best model: {best_model_name} with CV score: {best_score:.4f}")
+        
+        # 6. Final Evaluation & Feature Importance
+        y_pred = self.model_pipeline.predict(X_test)
+        
+        print("\n--- Model Training Complete ---")
+        print(f"**Best Model:** {best_model_name}")
+        print(f"**Features Used:** {self.features_list}")
+        
+        if self.model_type == 'regression':
+            print(f"**Test Set R² Score:** {r2_score(y_test, y_pred):.4f}")
+            print(f"**Test Set MSE:** {mean_squared_error(y_test, y_pred):.4f}")
+        else:
+            print(f"**Test Set Accuracy:** {accuracy_score(y_test, y_pred):.4f}")
+            print("\n**Test Set Classification Report:**")
+            print(classification_report(y_test, y_pred, zero_division=0))
+        
+        # Feature Importance 
+        self.show_feature_importance()
+        
+        # MEMORY: Force garbage collection
+        gc.collect()
+
+    def _train_regression(self, X_train, y_train, X_test, y_test, preprocessor):
+        models = {
+            'LinearRegression': (LinearRegression(), {}),
+            'RandomForest': (RandomForestRegressor(random_state=42), 
+                             {'model__n_estimators': [50, 100, 200], 'model__max_depth': [5, 10, 20, None]}),
+            'GradientBoosting': (GradientBoostingRegressor(random_state=42), 
+                                 {'model__n_estimators': [50, 100], 'model__learning_rate': [0.05, 0.1]})
+        }
+        if XGBOOST_AVAILABLE:
+            models['XGBoost'] = (XGBRegressor(random_state=42, enable_categorical=True),
+                                 {'model__n_estimators': [50, 100, 200], 'model__learning_rate': [0.05, 0.1, 0.2]})
+        return self._train_models_generic(models, X_train, y_train, X_test, y_test, preprocessor, 'r2')
+
+    def _train_classification(self, X_train, y_train, X_test, y_test, preprocessor):
+        models = {
+            'LogisticRegression': (LogisticRegression(random_state=42, max_iter=1000), 
+                                   {'model__C': [0.1, 1.0, 10]}),
+            'RandomForest': (RandomForestClassifier(random_state=42), 
+                             {'model__n_estimators': [50, 100, 200], 'model__max_depth': [5, 10, 20, None]}),
+            'GradientBoosting': (GradientBoostingClassifier(random_state=42), 
+                                 {'model__n_estimators': [50, 100], 'model__learning_rate': [0.05, 0.1]})
+        }
+        if XGBOOST_AVAILABLE:
+            models['XGBoost'] = (XGBClassifier(random_state=42, enable_categorical=True),
+                                 {'model__n_estimators': [50, 100, 200], 'model__learning_rate': [0.05, 0.1, 0.2]})
+        return self._train_models_generic(models, X_train, y_train, X_test, y_test, preprocessor, 'accuracy')
+
+    def _train_models_generic(self, models, X_train, y_train, X_test, y_test, preprocessor, scoring):
         best_score = -np.inf
         best_pipeline = None
         best_model_name = ""
 
-        # 5. Train and Evaluate Models using RandomizedSearchCV 
         for name, (model, params) in models.items():
             self.logger.info(f"--- Training {name} ---")
             pipeline = Pipeline(steps=[('preprocessor', preprocessor), ('model', model)])
@@ -271,30 +319,7 @@ class Data_Analyzer:
                 best_model_name = name
 
         if best_pipeline is None: raise RuntimeError("All models failed to train.")
-            
-        self.model_pipeline = best_pipeline
-        self.logger.info(f"Selected best model: {best_model_name} with CV score: {best_score:.4f}")
-        
-        # 6. Final Evaluation & Feature Importance
-        y_pred = self.model_pipeline.predict(X_test)
-        
-        print("\n--- Model Training Complete ---")
-        print(f"**Best Model:** {best_model_name}")
-        print(f"**Features Used:** {self.features_list}")
-        
-        if self.model_type == 'regression':
-            print(f"**Test Set R² Score:** {r2_score(y_test, y_pred):.4f}")
-            print(f"**Test Set MSE:** {mean_squared_error(y_test, y_pred):.4f}")
-        else:
-            print(f"**Test Set Accuracy:** {accuracy_score(y_test, y_pred):.4f}")
-            print("\n**Test Set Classification Report:**")
-            print(classification_report(y_test, y_pred, zero_division=0))
-        
-        # Feature Importance 
-        self.show_feature_importance()
-        
-        # MEMORY: Force garbage collection
-        gc.collect()
+        return best_pipeline, best_model_name, best_score
 
     def show_feature_importance(self):
         """ Extracts and displays feature importance from the trained pipeline. """
@@ -538,6 +563,54 @@ class Data_Analyzer:
 
         except Exception as e:
             self.logger.error(f"Unsupervised analysis failed: {str(e)}")
+            raise
+
+    def run_forecasting(self, target_col: str, date_col: str, periods: int = 30) -> dict:
+        """
+        Runs Time Series Forecasting using Prophet.
+        """
+        if not PROPHET_AVAILABLE:
+            raise ImportError("Prophet is not installed. Please install it using 'pip install prophet'.")
+
+        if self.df is None:
+            raise ValueError("Data not loaded.")
+
+        if target_col not in self.df.columns or date_col not in self.df.columns:
+            raise ValueError(f"Columns {target_col} and/or {date_col} not found in data.")
+
+        print(f"\n--- Starting Prophet Forecasting ---")
+        self.logger.info(f"Forecasting target '{target_col}' using date column '{date_col}' for {periods} periods.")
+
+        try:
+            # Prophet requires columns named 'ds' (date) and 'y' (target)
+            prophet_df = self.df[[date_col, target_col]].rename(columns={date_col: 'ds', target_col: 'y'})
+            
+            # Ensure proper types
+            prophet_df['ds'] = pd.to_datetime(prophet_df['ds'])
+            prophet_df['y'] = pd.to_numeric(prophet_df['y'], errors='coerce')
+            prophet_df = prophet_df.dropna()
+            
+            model = Prophet()
+            model.fit(prophet_df)
+            
+            future = model.make_future_dataframe(periods=periods)
+            forecast = model.predict(future)
+            
+            # Generate plots
+            fig1 = model.plot(forecast)
+            fig2 = model.plot_components(forecast)
+            
+            self.logger.info("Forecasting complete.")
+            
+            return {
+                'forecast': forecast,
+                'model': model,
+                'figures': [fig1, fig2],
+                'forecast_tail': forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].tail(periods)
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Forecasting failed: {str(e)}")
             raise
 
     def train_rl_agent(self, target_col: str, total_timesteps: int = 10000, save_path: str = "rl_trend_predictor"):

@@ -1,30 +1,39 @@
-# Flexible ML Predictor
+# Predicto-AI
 
 ## Description
 
-An optimized, end-to-end **Auto-ML command-line tool** designed for the comprehensive analysis of tabular data (CSV, Excel, JSON). This project bridges the gap between traditional and advanced machine learning by integrating **Supervised Learning** (Regression/Classification), **Unsupervised Learning** (Clustering/PCA), and **Reinforcement Learning** (Trend Prediction) into a single, memory-efficient pipeline.
+An advanced, dual-interface **Auto-ML platform** designed for the comprehensive analysis of tabular data. This project now offers both a robust **Command-Line Interface (CLI)** and a professional **Streamlit Web Dashboard**.
 
-It guarantees model integrity using **scikit-learn Pipelines** to prevent data leakage, maximizes speed with **RandomizedSearchCV**, and provides deep interpretability through **feature importance** reporting.
+It bridges the gap between traditional and modern AI by integrating:
+*   **Supervised Learning:** Regression & Classification (with **XGBoost** support).
+*   **Time-Series Forecasting:** Powered by **Facebook Prophet**.
+*   **Reinforcement Learning:** Trend prediction using **PPO Agents**.
+*   **Unsupervised Learning:** Clustering & PCA.
+
+Engineered for performance, it features **PyArrow**-accelerated data loading, compressed model artifacts, and strict data leakage prevention using scikit-learn Pipelines.
 
 ---
 
 ## Key Features
 
-### Machine Learning Modules
-* **Supervised Learning:** Automatically detects and trains **Regression** (numeric target) or **Classification** (categorical target) models using robust algorithms (Random Forest, Gradient Boosting, Linear/Logistic Regression).
-* **Unsupervised Analysis:** In-tool options for **K-Means Clustering** and **Principal Component Analysis (PCA)** to discover hidden patterns and reduce dimensionality.
-* **Reinforcement Learning (NEW):** Includes a custom **Gymnasium Environment** that treats data as a time-series. Trains a **PPO Agent** (via Stable Baselines3) to predict future trends (Increase/Decrease) based on sequential state features.
+### 🖥️ Interactive Dashboard
+A professional web interface built with **Streamlit** offering:
+*   **Modern Dark UI:** A sleek, glassmorphism-inspired dark theme designed for professional use.
+*   **Robust Architecture:** Features a "Safe Boot" system to handle heavy ML dependency loading without crashing.
+*   **Data Upload:** Drag-and-drop CSV/Excel/JSON files with instant **PyArrow** processing.
+*   **EDA:** Tabbed interactions for distributions, correlations, and feature overviews using **Plotly**.
+*   **No-Code Training:** Train XGBoost/Sklearn models with one click.
+*   **Interactive Forecasting:** Visual time-series prediction with dynamic zoom/pan.
 
-### Engineering & Performance
-* **Data Leakage Prevention:** Strictly isolates preprocessing (scaling, imputation) within a `ColumnTransformer` to ensure test data remains unseen during training.
-* **Memory Optimized:** Automates **sparse encoding** for categoricals and **numeric downcasting** to handle large datasets efficiently.
-* **Smart Feature Engineering:** Automatically detects datetime columns and extracts predictive features (**month, day, hour**).
-* **Fast Model Selection:** Uses **RandomizedSearchCV** to efficiently find the best hyperparameters without the computational cost of exhaustive grid searches.
+### 🤖 Advanced Algorithms
+*   **Gradient Boosting Powerhouse:** Integrated **XGBoost** (Regressor/Classifier) alongside Random Forest and Gradient Boosting for state-of-the-art performance.
+*   **Prophet Forecasting:** specialized additive models for accurate time-series prediction, handling seasonality and trends automatically.
+*   **RL Trend Predictor:** Custom **Gymnasium Environment** trained with **Stable Baselines3 (PPO)** to predict future market/data directions.
 
-### Utilities
-* **Model Persistence:** Save and load full pipelines (preprocessor + model) using `joblib` and RL agents using `.zip` format.
-* **Security:** Includes warnings when loading models to prevent execution of untrusted code.
-* **Deep Analysis:** Efficient **Pandas-based querying** and visualization (histograms, scatter plots).
+### ⚙️ Engineering & Optimization
+*   **High-Performance I/O:** Uses `engine='pyarrow'` for ultra-fast CSV reading and memory efficiency.
+*   **Storage Optimization:** Models are saved with **level-3 compression** to reduce artifact size without losing accuracy.
+*   **Robust Pipelines:** Automates scaling, imputation, and encoding within `searchable` pipelines to prevent data leakage.
 
 ---
 
@@ -32,17 +41,18 @@ It guarantees model integrity using **scikit-learn Pipelines** to prevent data l
 
 1.  **Clone the Repository:**
     ```bash
-    git clone https://github.com/your-username/flexible-ml-predictor.git
+    git clone https://github.com/Shafiyullah/Predicto-AI.git
     ```
 
 2.  **Create a Virtual Environment (Recommended):**
     ```bash
     python -m venv venv
-    source venv/bin/activate  # Windows: venv\Scripts\activate
     ```
+    *   **Windows:** `venv\Scripts\activate`
+    *   **Linux/Mac:** `source venv/bin/activate`
 
 3.  **Install Dependencies:**
-    *Includes `stable-baselines3` and `gymnasium` for RL support.*
+    *Includes `xgboost`, `prophet`, `streamlit`, and `plotly`.*
     
     ```bash
     pip install -r requirements.txt
@@ -52,8 +62,15 @@ It guarantees model integrity using **scikit-learn Pipelines** to prevent data l
 
 ## Usage
 
-Run the main application from your terminal to access the interactive menu:
+### Option 1: Web Dashboard (Recommended)
+Launch the full GUI experience:
+```bash
+streamlit run dashboard.py
+```
+*Access the dashboard in your browser at `http://localhost:8501`*
 
+### Option 2: Command Line Interface
+Run the classic terminal-based tool:
 ```bash
 python main.py
 ```
