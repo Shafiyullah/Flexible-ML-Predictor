@@ -5,7 +5,7 @@
 An advanced, dual-interface **Auto-ML platform** designed for the comprehensive analysis of tabular data. This project now offers both a robust **Command-Line Interface (CLI)** and a professional **Streamlit Web Dashboard**.
 
 It bridges the gap between traditional and modern AI by integrating:
-*   **Supervised Learning:** Regression & Classification (with **XGBoost** support).
+*   **Supervised Learning:** Regression & Classification (with **XGBoost** & **HistGradientBoosting** support).
 *   **Time-Series Forecasting:** Powered by **Facebook Prophet**.
 *   **Reinforcement Learning:** Trend prediction using **PPO Agents**.
 *   **Unsupervised Learning:** Clustering & PCA.
@@ -26,14 +26,17 @@ A professional web interface built with **Streamlit** offering:
 *   **Interactive Forecasting:** Visual time-series prediction with dynamic zoom/pan.
 
 ### 🤖 Advanced Algorithms
-*   **Gradient Boosting Powerhouse:** Integrated **XGBoost** (Regressor/Classifier) alongside Random Forest and Gradient Boosting for state-of-the-art performance.
+*   **Gradient Boosting Powerhouse:** Integrated **XGBoost** and **HistGradientBoosting** (Regressor/Classifier) alongside Random Forest for state-of-the-art performance on datasets of any size.
 *   **Prophet Forecasting:** specialized additive models for accurate time-series prediction, handling seasonality and trends automatically.
 *   **RL Trend Predictor:** Custom **Gymnasium Environment** trained with **Stable Baselines3 (PPO)** to predict future market/data directions.
 
 ### ⚙️ Engineering & Optimization
 *   **High-Performance I/O:** Uses `engine='pyarrow'` for ultra-fast CSV reading and memory efficiency.
 *   **Storage Optimization:** Models are saved with **level-3 compression** to reduce artifact size without losing accuracy.
+*   **Vectorized Processing:** Replaces iterative loops with **vectorized pandas operations** for ultra-fast string cleaning and type inference.
+*   **Memory Efficiency:** Smart downcasting of numeric columns (Float64 -> Float32/16) to reduce memory footprint by up to 50%.
 *   **Robust Pipelines:** Automates scaling, imputation, and encoding within `searchable` pipelines to prevent data leakage.
+*   **Production Standards:** Fully PEP8 compliant with comprehensive **Google-Style Docstrings** and structured logging.
 
 ---
 
