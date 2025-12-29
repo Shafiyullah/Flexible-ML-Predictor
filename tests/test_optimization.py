@@ -6,7 +6,7 @@ import numpy as np
 # Add project root to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from analyzer.data_analyzer import Data_Analyzer
+from analyzer.data_analyzer import DataAnalyzer
 
 def test_optimization_flow():
     print("--- Starting Optimization Verification ---")
@@ -22,7 +22,7 @@ def test_optimization_flow():
     df.to_csv(csv_path, index=False)
     print(f"Created dummy CSV: {csv_path}")
 
-    analyzer = Data_Analyzer()
+    analyzer = DataAnalyzer()
 
     # 2. Test Data Loading (PyArrow)
     try:

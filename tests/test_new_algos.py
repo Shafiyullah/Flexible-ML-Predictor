@@ -7,14 +7,14 @@ from datetime import datetime, timedelta
 # Add project root to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from analyzer.data_analyzer import Data_Analyzer, XGBOOST_AVAILABLE, PROPHET_AVAILABLE
+from analyzer.data_analyzer import DataAnalyzer, XGBOOST_AVAILABLE, PROPHET_AVAILABLE
 
 def test_new_features():
     print("--- Starting Advanced Algorithms Verification ---")
     print(f"XGBoost Available: {XGBOOST_AVAILABLE}")
     print(f"Prophet Available: {PROPHET_AVAILABLE}")
     
-    analyzer = Data_Analyzer()
+    analyzer = DataAnalyzer()
 
     # 1. Test XGBoost (Regression)
     print("\n[Test 1] XGBoost Regression")

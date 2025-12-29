@@ -5,11 +5,11 @@ import inspect
 # Add project root to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from analyzer.data_analyzer import Data_Analyzer
+from analyzer.data_analyzer import DataAnalyzer
 
 def test_structure():
-    print("Testing Data_Analyzer structure...")
-    analyzer = Data_Analyzer()
+    print("Testing DataAnalyzer structure...")
+    analyzer = DataAnalyzer()
     
     # Check attributes
     assert hasattr(analyzer, 'unsupervised_model'), "Missing 'unsupervised_model' attribute"
